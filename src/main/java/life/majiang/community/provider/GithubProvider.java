@@ -29,6 +29,7 @@ public class GithubProvider {
 //            System.out.println(str);
 //            return str;
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }

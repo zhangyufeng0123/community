@@ -11,8 +11,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.UUID;
 
 @Controller
@@ -21,7 +23,7 @@ public class AuthorizeController {
     @Autowired
     private GithubProvider githubProvider;
 
-    @Autowired(required = false)
+    @Autowired
     private UserMapper userMapper;
 
     @Value("${github.client.id}")
@@ -36,7 +38,8 @@ public class AuthorizeController {
     @GetMapping("/callback")
     public String callback(@RequestParam(name="code") String code,
                            @RequestParam(name="state") String state,
-                           HttpServletRequest request) {
+                           HttpServletRequest request,
+                           HttpServletResponse response) {
         AccessTokenDTO dto = new AccessTokenDTO();
         dto.setCode(code);
         dto.setState(state);
@@ -48,7 +51,8 @@ public class AuthorizeController {
 
         if (githubUser != null){
             User user = new User();
-            user.setToken(UUID.randomUUID().toString());
+            String token = UUID.randomUUID().toString();
+            user.setToken(token);
             user.setAccountId(String.valueOf(githubUser.getId()));
             user.setName(githubUser.getName());
             user.setGmtCreate(System.currentTimeMillis());
@@ -56,11 +60,10 @@ public class AuthorizeController {
             System.out.println(user.getName());
             userMapper.insert(user);
             // 登录成功，写cookie 和 session
-            request.getSession().setAttribute("user", githubUser);
-            return "redirect:/";
+            response.addCookie(new Cookie("token", token));
         } else {
             // 登录失败，重新登录
-            return "redirect:/";
         }
+        return "redirect:/";
     }
 }
